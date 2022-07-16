@@ -1,0 +1,12 @@
+[COMANDOS PARA SETAR UMA VIRTUAL ENVIROMENT]
+
+Cria e ativa:
+py -3 -m venv .venv
+.venv\scripts\activate
+
+Altera a politica de execução
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+
+
+pip freeze ve a venv

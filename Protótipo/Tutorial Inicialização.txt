@@ -1,0 +1,30 @@
+[COMANDOS PARA RODAR TCC]
+
+Primeiro, precisamos instalar o Python 3.9. Depois de instalar, verifique se o Python realmente foi
+reconhecido pelo sistema e incluso nas variáveis de ambiente do usuário. Digite no terminal:
+
+Python --version
+
+Em seguida, verifique a versão do pip, com:
+
+pip --version 
+
+Vamos criar um ambiente virtual para gerenciar nossos pacotes python somente no local
+onde estamos trabalhando. Para isso, vamos adicionar o pacote virtualenv: 
+
+pip install virtualenv 
+
+Em seguida, vamos criar o ambiente virtual na pasta do projeto com o seguinte comando: 
+
+virtualenv nome_ambiente
+
+Feito isso, podemos começar a adicionar os pacotes que o projeto precisa, 
+sendo eles:
+
+-pandas: pip install pandas
+-numpy: pip install numpy
+-sckit: pip install -U scikit-learn
+-sckit image: pip install -U scikit-image
+-cv2: pip install opencv-python
+-mahotas: pip install mahotas
+-Matplot: pip install -U matplotlib
