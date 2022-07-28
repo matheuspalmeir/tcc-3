@@ -16,10 +16,13 @@ import rasterstats
 from rasterio.features import rasterize
 from rasterstats.io import bounds_window
 import os 
+import pandas as pd
+
+
 def offset(length, angle):
     """Retorna o deslocamento em pixels para um determinado comprimento e ângulo"""
-    dv = length * np.sign(-np.sin(angle)).astype(np.int8)
-    dh = length * np.sign(np.cos(angle)).astype(np.int8)
+    dv = length * np.sign(-np.sin(angle)).astype(np.int32)
+    dh = length * np.sign(np.cos(angle)).astype(np.int32)
     return dv, dh
 
 def crop(img, center, win):
@@ -38,7 +41,7 @@ def cooc_maps(img, center, win, d=[1], theta=[0], levels=256):
     em um corte quadrado centrado no centro (size = 2*w + 1)
     """
     shape = (2*win + 1, 2*win + 1, len(d), len(theta))
-    cooc = np.zeros(shape=shape, dtype=np.int8)
+    cooc = np.zeros(shape=shape, dtype=np.int32)
     row, col = center
     Ii = crop(img, (row, col), win)
     for d_index, length in enumerate(d):
@@ -58,8 +61,10 @@ def decode_cooccurrence(code, levels=256):
 
 def compute_glcms(cooccurrence_maps, levels=256):
     """Calcular as frequências de coocorrência dos mapas de coocorrência"""
+  #  print(cooccurrence_maps.shape)
+   # print(cooccurrence_maps.shape[2:])
     Nr, Na = cooccurrence_maps.shape[2:]
-    glcms = np.zeros(shape=(levels, levels, Nr, Na), dtype=np.float16)
+    glcms = np.zeros(shape=(levels, levels, Nr, Na), dtype=np.float32)
     for r in range(Nr):
         for a in range(Na):
             table = stats.itemfreq(cooccurrence_maps[:, :, r, a])
@@ -74,7 +79,6 @@ def compute_props(glcms, props=('contrast',)):
     Nr, Na = glcms.shape[2:]
     features = np.zeros(shape=(Nr, Na, len(props)))
     for index, prop_name in enumerate(props):
-        
         features[:, :, index] = greycoprops(glcms, prop_name)
     return features.ravel() 
 
@@ -84,75 +88,51 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
     margin = win + max(d)
     arr = np.pad(img, margin, mode='reflect')
     n_features = len(d) * len(theta) * len(props)
-    feature_map = np.zeros(shape=(rows, cols, n_features), dtype=np.float16)
-    
-    
-    # this larger cell reads data from a raster file for each training vector
+    feature_map = np.zeros(shape=(rows, cols, n_features), dtype=np.float32)
+        
     X_raw = []
     y_raw = []
-    i = 0
     
-    path = file.split('.')[0]
-    try: 
-        os.mkdir(path) 
-    except OSError as error: 
-        print(error)  
+    name_save_feat_path = name_save+str('.csv')
     
+    #Leitura do raster
     with rasterio.open(file, 'r') as src:
-       
-        for (label, geom) in tqdm(zip(df[month], df.geometry)):
-            name_save_feat = name_save+'_'+str(i)
-            print(name_save_feat)
-            name_save_feat_path = path+name_save_feat
-           
-            i+=1
-            # read the raster data matching the geometry bounds
+        #Iteração para leitura de cada geometry
+        i = 0
+        for (label, geom) in tqdm(zip(df[month], df.geometry)):             
+            # Le os dados raster correspondentes aos limites da geometria
             window = bounds_window(geom.bounds, src.transform)
-            # store our window information
+            # Armazene nossas informações de Window
             window_affine = src.window_transform(window)
             fsrc = src.read(window=window)
-            # rasterize the geometry into the larger shape and affine
+            # Rasteriza  a geometry na forma maior e afina
             mask = rasterize(
                 [(geom, 1)],
                 out_shape=fsrc.shape[1:],
                 transform=window_affine,
                 fill=0,
-                dtype='uint8',
+                dtype='float32',
                 all_touched=True
             ).astype(bool)
            
-            # for each label pixel (places where the mask is true)
+            # para cada pixel de label (lugares onde a mask é true)
             label_pixels = np.argwhere(mask)
+            # Repetição de cada pixel na geometry
             for (row, col) in label_pixels:
-                
+                # Mapa de coorelação de acordo com todos os atributos distancia/windows/angulos/cores
                 coocs = cooc_maps(arr, (row + margin, col + margin), win, d, theta, levels)
-              
+                # Calcula GLCM
                 glcms = compute_glcms(coocs, levels)
-             
+                # Calcula as features 
                 feat = compute_props(glcms, props) 
-                
+                # Adiciona em um vetor os valores de feautures (X) e as classes (Y)
                 X_raw.append(feat)
                 y_raw.append(class_dict[label])
-                
-    # convert the training data lists into the appropriate numpy array shape and format for scikit-learn
-    X = np.array(X_raw)
-    y = np.array(y_raw)
-    print((X.shape, y.shape))
-    return X,y
-"""
-    for m in range(rows):        
-        for n in range(cols):
-            start_time = time.time()
-            coocs = cooc_maps(arr, (m + margin, n + margin), win, d, theta, levels)
-            print("---1Tempo cooc_maps %s seconds ---" % (time.time() - start_time))
-            start_time = time.time()
-            glcms = compute_glcms(coocs, levels)
-           # print(glcms.shape)
-            print("---2Tempo GLCM %s seconds ---" % (time.time() - start_time))
-            start_time = time.time()
-            feature_map[m, n, :] = compute_props(glcms, props) 
-            print("---2Tempo feature_map  %s seconds ---" % (time.time() - start_time))
-
-            time.sleep(0.0001)
-           # print(feature_map.shape)
-    return feature_map"""
+              
+        #Realiza a conversa dos vetores em dataframes e salva em um csv     
+        X = np.array(X_raw)
+        y = np.array(y_raw)
+        df = pd.concat([pd.DataFrame(X),pd.DataFrame(y)],axis = "columns")
+        df.to_csv(name_save_feat_path, index=False)
+        print("Save data in csv : "+name_save_feat_path)
+        return X,y
