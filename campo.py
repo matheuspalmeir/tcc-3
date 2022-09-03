@@ -8,7 +8,7 @@ Created on Sun Jun 12 17:39:49 2022
 import numpy as np
 from skimage import io
 from scipy import stats
-from skimage.feature import greycoprops
+from skimage.feature import greycomatrix, greycoprops
 import time
 from tqdm import tqdm
 import rasterio
@@ -92,7 +92,7 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
         
     X_raw = []
     y_raw = []
-    
+    coords = []
     name_save_feat_path = name_save+str('.csv')
     
     #Leitura do raster
@@ -106,6 +106,8 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
             window_affine = src.window_transform(window)
             fsrc = src.read(window=window)
             # Rasteriza  a geometry na forma maior e afina
+            row_min = window[0][0]
+            col_min =  window[1][0]
             mask = rasterize(
                 [(geom, 1)],
                 out_shape=fsrc.shape[1:],
@@ -119,6 +121,8 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
             label_pixels = np.argwhere(mask)
             # Repetição de cada pixel na geometry
             for (row, col) in label_pixels:
+                row = row + row_min
+                col = col + col_min
                 # Mapa de coorelação de acordo com todos os atributos distancia/windows/angulos/cores
                 coocs = cooc_maps(arr, (row + margin, col + margin), win, d, theta, levels)
                 # Calcula GLCM
@@ -126,13 +130,18 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
                 # Calcula as features 
                 feat = compute_props(glcms, props) 
                 # Adiciona em um vetor os valores de feautures (X) e as classes (Y)
+                coords.append([row,col])
                 X_raw.append(feat)
-                y_raw.append(class_dict[label])
+                y_raw.append(class_dict[label])     
               
+                
         #Realiza a conversa dos vetores em dataframes e salva em um csv     
         X = np.array(X_raw)
         y = np.array(y_raw)
-        df = pd.concat([pd.DataFrame(X),pd.DataFrame(y)],axis = "columns")
+        C = np.array(coords)
+        df = pd.concat([pd.DataFrame(C),pd.DataFrame(X),pd.DataFrame(y)],axis = "columns")
+        df.columns = ['row','col','feat_0','feat_1','feat_2','feat_3','feat_4','feat_5','feat_6','feat_7',
+                      'feat_8','feat_9','feat_10','feat_11','feat_12','feat_13','feat_14','feat_15','class']
         df.to_csv(name_save_feat_path, index=False)
         print("Save data in csv : "+name_save_feat_path)
         return X,y

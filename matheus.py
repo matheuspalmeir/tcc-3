@@ -4,7 +4,6 @@ Created on Sun Jun 12 17:49:29 2022
 
 @author: gtvol
 """
-
 import campo
 from skimage import io
 import numpy as np
@@ -17,8 +16,8 @@ import time
 begin_timer = time.time()   # Começa o a contar o tempo
 
 #TROCAR NOME DE SALVAR, O ARQUIVO QUE VAI LER E TAMBEM O NUMERO DO MES/ANO
-name_save = '04Dec_2015_VH'
-file = 'D:/campo/Dataset/Sentinel-1 (zip)/images/04Dec_2015_VH.tif'
+name_save = '22Nov_2015_VHteste'
+file = 'D:/campo/Dataset/Sentinel-1 (zip)/images/22Nov_2015_VH.tif'
 #Leitura da imagem 
 raster = rgb2gray(imread(file))
 raster = np.array(raster,dtype = np.float32)
@@ -43,7 +42,7 @@ classes = np.unique(df[month])
 class_dict = dict(zip(classes, range(len(classes))))
 
 #Passar todos os parametros, só
-Xs, ys = campo.haralick_features(raster, win, d, theta, levels, props,file,df, month[0],class_dict,name_save)
+Xs,ys = campo.haralick_features(raster, win, d, theta, levels, props,file,df, month[1],class_dict,name_save)
 
 end_timer = time.time() # Termina a contagem de tempo do algoritmo
 print(end_timer-begin_timer)
