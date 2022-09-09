@@ -133,7 +133,7 @@ def haralick_features(img, win, d, theta, levels, props,file,df, month,class_dic
                 X_raw.append(feat)
                 y_raw.append(class_dict[label])     
               
-            break
+   
         #Realiza a conversa dos vetores em dataframes e salva em um csv     
         X = np.array(X_raw)
         y = np.array(y_raw)
