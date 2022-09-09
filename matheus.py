@@ -16,8 +16,8 @@ import time
 begin_timer = time.time()   # Começa o a contar o tempo
 
 #TROCAR NOME DE SALVAR, O ARQUIVO QUE VAI LER E TAMBEM O NUMERO DO MES/ANO
-name_save = '22Nov_2015_VHteste'
-file = 'D:/campo/Dataset/Sentinel-1 (zip)/images/22Nov_2015_VH.tif'
+name_save = '22Nov_2015_VVteste1'
+file = 'D:/campo/Dataset/Sentinel-1 (zip)/images/22Nov_2015_VV.tif'
 #Leitura da imagem 
 raster = rgb2gray(imread(file))
 raster = np.array(raster,dtype = np.float32)
