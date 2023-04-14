@@ -129,8 +129,9 @@ dmypy.json
 .pyre/
 
 *.yml
-
+*.csv
 
 Dataset/
 test_files
 period-features
+
